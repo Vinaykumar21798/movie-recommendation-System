@@ -1,4 +1,4 @@
-"""Task 1: Load MovieLens and validate sparse data structures."""
+
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from recommender_common import (
 
 
 def main() -> None:
-    """Load MovieLens, build mappings/CSR matrix, and print validation facts."""
+    
     ratings, movies = load_movielens()
     user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
 

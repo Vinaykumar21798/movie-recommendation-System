@@ -1,4 +1,4 @@
-"""Task 5: Matrix factorization with portable artifacts and validation tuning."""
+
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from recommender_item_cf import (
 
 
 def fit_svd(train_matrix: sp.csr_matrix, n_factors: int) -> tuple[TruncatedSVD, np.ndarray, np.ndarray, np.ndarray]:
-    """Fit TruncatedSVD and return model, user factors, movie factors, and dense scores."""
+    
     svd = TruncatedSVD(n_components=n_factors, random_state=42)
     user_factors = svd.fit_transform(train_matrix)
     movie_factors = svd.components_.T
@@ -51,7 +51,7 @@ def evaluate_pred_scores(
     num_movies: int,
     k: int = TOP_K,
 ) -> dict[str, float]:
-    """Evaluate dense user-by-movie score matrix with seen-item masking."""
+    
     def _recommender(user_idx: int) -> list[int]:
         scores = pred_scores[user_idx].copy()
         watched = train_user_watched.get(user_idx, set())
@@ -67,7 +67,7 @@ def top_recommendations_from_scores(
     watched: set[int],
     top_n: int,
 ) -> list[int]:
-    """Return top-N movie indices after masking watched movies."""
+    
     masked = scores.copy()
     if watched:
         masked[list(watched)] = -np.inf
@@ -84,7 +84,7 @@ def nearest_movies_in_factor_space(
     min_ratings: int = 15,
     top_n: int = 4,
 ) -> dict[str, list[dict[str, object]]]:
-    """Find nearest movies in normalized SVD factor space."""
+    
     norms = np.linalg.norm(movie_factors, axis=1)
     norms[norms == 0] = 1.0
     normalized = movie_factors / norms[:, None]
@@ -128,7 +128,7 @@ def nearest_movies_in_factor_space(
 
 
 def main() -> None:
-    """Run validation-selected matrix factorization and save portable artifacts."""
+    
     parser = argparse.ArgumentParser(description="Matrix factorization recommender")
     parser.add_argument("--artifact_dir", type=Path, default=ARTIFACT_DIR)
     parser.add_argument("--output_dir", type=Path, default=OUTPUT_DIR)

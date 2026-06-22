@@ -1,37 +1,37 @@
 {
   "artifact_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\api_model_state.pkl",
   "cache_benchmark": {
-    "cache_speedup_x": 8897.090144598982,
-    "cold_request_ms": 16.904599993722513,
+    "cache_speedup_x": 9043.931140861467,
+    "cold_request_ms": 13.566000008722767,
     "result_count": 10.0,
     "user_id": 1.0,
-    "warm_request_ms": 0.001900014467537403
+    "warm_request_ms": 0.001500011421740055
   },
   "comparison": {
     "graph": {
       "coverage": 0.010059536029562718,
-      "ms_per_req": 51.60503032785214,
-      "ndcg@10": 0.08833563002482994,
-      "precision@10": 0.0739344262295082,
-      "recall@10": 0.04152234772985889
+      "ms_per_req": 36.30526704917906,
+      "ndcg@10": 0.08815634776442391,
+      "precision@10": 0.07360655737704919,
+      "recall@10": 0.04138652766175087
     },
     "item_cf": {
       "coverage": 0.060665161157873126,
-      "ms_per_req": 1.3859681966886321,
+      "ms_per_req": 0.7985240983543918,
       "ndcg@10": 0.12144959159434907,
       "precision@10": 0.10688524590163935,
       "recall@10": 0.06365724554348276
     },
     "mf": {
       "coverage": 0.06856908232395811,
-      "ms_per_req": 1.2123598360750427,
+      "ms_per_req": 1.0962927868574492,
       "ndcg@10": 0.11890856877735625,
       "precision@10": 0.10459016393442623,
       "recall@10": 0.06740741506763856
     },
     "popularity": {
       "coverage": 0.010059536029562718,
-      "ms_per_req": 0.08196524591528673,
+      "ms_per_req": 0.0664531147359397,
       "ndcg@10": 0.08649125687295463,
       "precision@10": 0.07180327868852458,
       "recall@10": 0.03884627461936912

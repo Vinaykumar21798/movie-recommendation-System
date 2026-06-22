@@ -1,4 +1,4 @@
-"""Task 6: Graph-based recommenders with BFS, PPR, and cluster quality search."""
+
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from recommender_item_cf import build_item_similarity, popularity_recommender_me
 
 
 class UnionFind:
-    """Disjoint-set structure with path compression and union by size."""
+    
 
     def __init__(self, n: int) -> None:
         self.parent = list(range(n))
@@ -55,7 +55,7 @@ class UnionFind:
 
 
 def build_bipartite_graph(train_df: pd.DataFrame) -> nx.Graph:
-    """Create an unweighted user-movie bipartite graph from train interactions."""
+    
     graph = nx.Graph()
     for row in train_df.itertuples(index=False):
         graph.add_edge(f"u{int(row.userId)}", f"m{int(row.movieId)}")
@@ -69,11 +69,21 @@ def bfs_recommend(
     movie_to_idx: dict[int, int],
     train_user_watched: dict[int, set[int]],
     top_n: int = TOP_K,
+    popular_fallback: Iterable[int] | None = None,
 ) -> list[int]:
-    """Recommend by counting 3-hop paths user -> movie -> user -> movie."""
+    
     user_node = f"u{idx_to_user[user_idx]}"
+    watched = train_user_watched.get(user_idx, set())
     if not graph.has_node(user_node):
-        return []
+        recs: list[int] = []
+        if popular_fallback is not None:
+            for movie_id in popular_fallback:
+                movie_idx = movie_to_idx.get(int(movie_id))
+                if movie_idx is not None and movie_idx not in watched:
+                    recs.append(movie_idx)
+                    if len(recs) == top_n:
+                        break
+        return recs
 
     movies_h1 = list(graph.neighbors(user_node))
     users_h2: set[str] = set()
@@ -89,22 +99,25 @@ def bfs_recommend(
         movie_counts.pop(movie_node, None)
 
     candidates: list[tuple[int, int]] = []
-    watched = train_user_watched.get(user_idx, set())
     for movie_node, count in movie_counts.items():
         movie_id = int(movie_node[1:])
         movie_idx = movie_to_idx.get(movie_id)
         if movie_idx is not None and movie_idx not in watched:
             candidates.append((count, movie_idx))
-    return [movie_idx for _, movie_idx in heapq.nlargest(top_n, candidates, key=lambda x: x[0])]
+    recs = [movie_idx for _, movie_idx in heapq.nlargest(top_n, candidates, key=lambda x: x[0])]
+    if len(recs) < top_n and popular_fallback is not None:
+        seen_recs = set(recs)
+        for movie_id in popular_fallback:
+            movie_idx = movie_to_idx.get(int(movie_id))
+            if movie_idx is not None and movie_idx not in watched and movie_idx not in seen_recs:
+                recs.append(movie_idx)
+                if len(recs) == top_n:
+                    break
+    return recs
 
 
 def ppr_scores_from_matrix(train_binary: sp.csr_matrix, alpha: float = 0.85, odd_steps: int = 5) -> sp.csr_matrix:
-    """Compute truncated Personalized PageRank movie scores for all users.
-
-    The score sums odd-length random-walk paths from each user back to movies:
-    (1-alpha) * sum alpha^t * P^t for t in {1, 3, 5, ...}.
-    This is a sparse, deterministic approximation suitable for all-user evaluation.
-    """
+    
     user_degree = np.asarray(train_binary.sum(axis=1)).ravel()
     movie_degree = np.asarray(train_binary.sum(axis=0)).ravel()
     user_degree[user_degree == 0] = 1.0
@@ -128,17 +141,28 @@ def ppr_recommend_from_scores(
     user_idx: int,
     train_user_watched: dict[int, set[int]],
     top_n: int = TOP_K,
+    popular_fallback: Iterable[int] | None = None,
+    movie_to_idx: dict[int, int] | None = None,
 ) -> list[int]:
-    """Return top-N PPR movie recommendations for one user."""
+    
     scores = ppr_scores[user_idx].toarray().ravel()
     watched = train_user_watched.get(user_idx, set())
     if watched:
         scores[list(watched)] = -np.inf
-    return [int(idx) for idx in np.argsort(scores)[::-1][:top_n] if scores[idx] > -np.inf]
+    recs = [int(idx) for idx in np.argsort(scores)[::-1][:top_n] if scores[idx] > -np.inf]
+    if len(recs) < top_n and popular_fallback is not None and movie_to_idx is not None:
+        seen_recs = set(recs)
+        for movie_id in popular_fallback:
+            movie_idx = movie_to_idx.get(int(movie_id))
+            if movie_idx is not None and movie_idx not in watched and movie_idx not in seen_recs:
+                recs.append(movie_idx)
+                if len(recs) == top_n:
+                    break
+    return recs
 
 
 def primary_genre_by_movie(movies: pd.DataFrame, movie_to_idx: dict[int, int]) -> dict[int, str]:
-    """Map internal movie index to its first genre for cluster purity."""
+    
     labels: dict[int, str] = {}
     for row in movies.itertuples(index=False):
         movie_id = int(row.movieId)
@@ -150,7 +174,7 @@ def primary_genre_by_movie(movies: pd.DataFrame, movie_to_idx: dict[int, int]) -
 
 
 def clusters_from_similarity(S: sp.csr_matrix, threshold: float, num_movies: int) -> list[list[int]]:
-    """Cluster movies by unioning item-similarity edges above a threshold."""
+    
     coo = S.tocoo()
     mask = (coo.row < coo.col) & (coo.data >= threshold)
     uf = UnionFind(num_movies)
@@ -168,25 +192,36 @@ def cluster_quality(
     genre_labels: dict[int, str],
     num_movies: int,
 ) -> dict[str, float]:
-    """Compute weighted cluster purity and giant-component dominance."""
+    
     non_singleton = [cluster for cluster in clusters if len(cluster) > 1]
     clustered_movies = sum(len(cluster) for cluster in non_singleton)
     largest_cluster = max((len(cluster) for cluster in clusters), default=0)
 
     if clustered_movies == 0:
         purity = 0.0
+        entropy = 0.0
     else:
         pure_count = 0
+        total_entropy = 0.0
         for cluster in non_singleton:
             counts = Counter(genre_labels.get(movie_idx, "unknown") for movie_idx in cluster)
             pure_count += counts.most_common(1)[0][1]
+            c_entropy = 0.0
+            sz = len(cluster)
+            for cnt in counts.values():
+                p = cnt / sz
+                if p > 0:
+                    c_entropy -= p * np.log2(p)
+            total_entropy += (sz / clustered_movies) * c_entropy
         purity = pure_count / clustered_movies
+        entropy = total_entropy
 
     clustered_ratio = clustered_movies / num_movies if num_movies else 0.0
     largest_ratio = largest_cluster / num_movies if num_movies else 0.0
     selection_score = purity * clustered_ratio * (1.0 - largest_ratio)
     return {
         "purity": purity,
+        "entropy": entropy,
         "clustered_ratio": clustered_ratio,
         "largest_component_ratio": largest_ratio,
         "num_clusters": float(len(clusters)),
@@ -197,7 +232,7 @@ def cluster_quality(
 
 
 def main() -> None:
-    """Run graph recommendation and clustering evaluations."""
+    
     ensure_project_dirs()
     set_reproducible_seed()
 
@@ -228,10 +263,13 @@ def main() -> None:
         binary=True,
     )
 
+    popularity_counts = train_df["movieId"].value_counts()
+    popular_movies = [int(mid) for mid in popularity_counts.index.tolist()]
+
     sample_user_idx = 0
-    bfs_sample = bfs_recommend(graph, sample_user_idx, idx_to_user, movie_to_idx, train_user_watched, top_n=3)
+    bfs_sample = bfs_recommend(graph, sample_user_idx, idx_to_user, movie_to_idx, train_user_watched, top_n=3, popular_fallback=popular_movies)
     ppr_scores = ppr_scores_from_matrix(train_binary, alpha=0.85, odd_steps=5)
-    ppr_sample = ppr_recommend_from_scores(ppr_scores, sample_user_idx, train_user_watched, top_n=3)
+    ppr_sample = ppr_recommend_from_scores(ppr_scores, sample_user_idx, train_user_watched, top_n=3, popular_fallback=popular_movies, movie_to_idx=movie_to_idx)
 
     print(f"\nbfs_recommend(user=0, n=3)   {[idx_to_movie[idx] for idx in bfs_sample]}")
     for idx, movie_idx in enumerate(bfs_sample, start=1):
@@ -242,16 +280,14 @@ def main() -> None:
         print(f"  {idx}. {get_movie_title(movies, idx_to_movie, movie_idx)}")
 
     def bfs_fn(user_idx: int) -> list[int]:
-        return bfs_recommend(graph, user_idx, idx_to_user, movie_to_idx, train_user_watched, top_n=TOP_K)
+        return bfs_recommend(graph, user_idx, idx_to_user, movie_to_idx, train_user_watched, top_n=TOP_K, popular_fallback=popular_movies)
 
     def ppr_fn(user_idx: int) -> list[int]:
-        return ppr_recommend_from_scores(ppr_scores, user_idx, train_user_watched, top_n=TOP_K)
+        return ppr_recommend_from_scores(ppr_scores, user_idx, train_user_watched, top_n=TOP_K, popular_fallback=popular_movies, movie_to_idx=movie_to_idx)
 
     bfs_metrics = evaluate_recommender(bfs_fn, test_user_movies, num_users, num_movies, k=TOP_K)
     ppr_metrics = evaluate_recommender(ppr_fn, test_user_movies, num_users, num_movies, k=TOP_K)
 
-    popularity_counts = train_df["movieId"].value_counts()
-    popular_movies = [int(mid) for mid in popularity_counts.index.tolist()]
     popularity_metrics = popularity_recommender_metrics(
         train_user_watched,
         test_user_movies,
@@ -288,6 +324,7 @@ def main() -> None:
         clusters_by_threshold[threshold] = clusters
         print(
             f"threshold={threshold:.1f} purity={metrics['purity']:.4f} "
+            f"entropy={metrics['entropy']:.4f} "
             f"largest_ratio={metrics['largest_component_ratio']:.4f} "
             f"clustered_ratio={metrics['clustered_ratio']:.4f} "
             f"score={metrics['selection_score']:.4f}"
@@ -306,11 +343,18 @@ def main() -> None:
     for cluster in selected_clusters[:5]:
         titles = [get_movie_title(movies, idx_to_movie, movie_idx) for movie_idx in cluster[:5]]
         labels = Counter(genre_labels.get(movie_idx, "unknown") for movie_idx in cluster)
+        c_entropy = 0.0
+        sz = len(cluster)
+        for cnt in labels.values():
+            p = cnt / sz
+            if p > 0:
+                c_entropy -= p * np.log2(p)
         cluster_examples.append(
             {
                 "size": len(cluster),
                 "dominant_genre": labels.most_common(1)[0][0],
                 "purity": labels.most_common(1)[0][1] / len(cluster),
+                "entropy": c_entropy,
                 "sample_titles": titles,
             }
         )
@@ -318,7 +362,7 @@ def main() -> None:
     for idx, example in enumerate(cluster_examples, start=1):
         print(
             f"Group {idx} size={example['size']} dominant={example['dominant_genre']} "
-            f"purity={example['purity']:.3f}"
+            f"purity={example['purity']:.3f} entropy={example['entropy']:.3f}"
         )
         print(f"  Sample titles: {example['sample_titles']}")
 

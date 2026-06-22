@@ -1,4 +1,4 @@
-"""Common data, split, metric, and artifact utilities for recommenders."""
+
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from config import DATA_DIR, RANDOM_SEED, ensure_project_dirs, set_reproducible_
 
 
 def download_and_extract_dataset(data_dir: str | os.PathLike[str] = DATA_DIR) -> str:
-    """Download MovieLens ml-latest-small if missing and return its directory."""
+    
     set_reproducible_seed(RANDOM_SEED)
     data_path = Path(data_dir)
     data_path.mkdir(parents=True, exist_ok=True)
@@ -46,7 +46,7 @@ def download_and_extract_dataset(data_dir: str | os.PathLike[str] = DATA_DIR) ->
 
 
 def load_movielens(data_dir: str | os.PathLike[str] = DATA_DIR) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load ratings.csv and movies.csv from MovieLens."""
+    
     dataset_path = Path(download_and_extract_dataset(data_dir))
     ratings = pd.read_csv(dataset_path / "ratings.csv")
     movies = pd.read_csv(dataset_path / "movies.csv")
@@ -58,7 +58,7 @@ def create_mappings(
     movies: pd.DataFrame,
     include_unrated_movies: bool = True,
 ) -> tuple[dict[int, int], dict[int, int], dict[int, int], dict[int, int]]:
-    """Create reversible user/movie id mappings."""
+    
     unique_users = sorted(ratings["userId"].unique())
     if include_unrated_movies:
         movie_ids = set(movies["movieId"].unique()) | set(ratings["movieId"].unique())
@@ -80,7 +80,7 @@ def build_user_movie_matrix(
     shape: tuple[int, int] | None = None,
     binary: bool = False,
 ) -> sp.csr_matrix:
-    """Build a CSR user-by-movie matrix from ratings."""
+    
     rows = ratings_df["userId"].map(user_to_idx).to_numpy()
     cols = ratings_df["movieId"].map(movie_to_idx).to_numpy()
     values = np.ones(len(ratings_df), dtype=np.float32) if binary else ratings_df["rating"].to_numpy()
@@ -89,7 +89,7 @@ def build_user_movie_matrix(
 
 
 def temporal_split(ratings_df: pd.DataFrame, test_ratio: float = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Split each user's history into chronological train/test partitions."""
+    
     train_parts: list[pd.DataFrame] = []
     test_parts: list[pd.DataFrame] = []
 
@@ -112,7 +112,7 @@ def temporal_train_validation_test_split(
     validation_ratio: float = 0.2,
     test_ratio: float = 0.2,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Split each user chronologically into train, validation, and test sets."""
+    
     train_parts: list[pd.DataFrame] = []
     val_parts: list[pd.DataFrame] = []
     test_parts: list[pd.DataFrame] = []
@@ -147,7 +147,7 @@ def verify_temporal_order(
     later_df: pd.DataFrame,
     label: str = "validation/test",
 ) -> None:
-    """Raise if any user's train rows occur after a later split row."""
+    
     for user_id, train_group in train_df.groupby("userId"):
         later_group = later_df[later_df["userId"] == user_id]
         if later_group.empty or train_group.empty:
@@ -157,7 +157,7 @@ def verify_temporal_order(
 
 
 def precision_at_k(recs: Iterable[int], test_movies: set[int], k: int) -> float:
-    """Binary Precision@K."""
+    
     recs_k = list(recs)[:k]
     if k <= 0:
         return 0.0
@@ -165,7 +165,7 @@ def precision_at_k(recs: Iterable[int], test_movies: set[int], k: int) -> float:
 
 
 def recall_at_k(recs: Iterable[int], test_movies: set[int], k: int) -> float:
-    """Binary Recall@K."""
+    
     if not test_movies:
         return 0.0
     recs_k = list(recs)[:k]
@@ -173,7 +173,7 @@ def recall_at_k(recs: Iterable[int], test_movies: set[int], k: int) -> float:
 
 
 def ndcg_at_k(recs: Iterable[int], test_movies: set[int], k: int) -> float:
-    """Binary NDCG@K."""
+    
     recs_k = list(recs)[:k]
     dcg = 0.0
     for idx, movie in enumerate(recs_k):
@@ -188,7 +188,7 @@ def build_user_movie_sets(
     user_to_idx: dict[int, int],
     movie_to_idx: dict[int, int],
 ) -> dict[int, set[int]]:
-    """Return {user_idx: set(movie_idx)} for a ratings dataframe."""
+    
     raw = (
         ratings_df.groupby("userId")["movieId"]
         .apply(lambda s: {movie_to_idx[int(m)] for m in s})
@@ -204,7 +204,7 @@ def evaluate_recommender(
     catalog_size: int,
     k: int = 10,
 ) -> dict[str, float]:
-    """Evaluate a recommender function over all users."""
+    
     p_list: list[float] = []
     r_list: list[float] = []
     n_list: list[float] = []
@@ -214,20 +214,29 @@ def evaluate_recommender(
         recs = recommender_fn(user_idx)[:k]
         all_recs.update(recs)
         test_movies = test_user_movies.get(user_idx, set())
-        p_list.append(precision_at_k(recs, test_movies, k))
-        r_list.append(recall_at_k(recs, test_movies, k))
-        n_list.append(ndcg_at_k(recs, test_movies, k))
+        if test_movies:
+            p_list.append(precision_at_k(recs, test_movies, k))
+            r_list.append(recall_at_k(recs, test_movies, k))
+            n_list.append(ndcg_at_k(recs, test_movies, k))
+
+    precision_val = float(np.mean(p_list)) if p_list else 0.0
+    recall_val = float(np.mean(r_list)) if r_list else 0.0
+    ndcg_val = float(np.mean(n_list)) if n_list else 0.0
+    coverage_val = len(all_recs) / catalog_size if catalog_size else 0.0
 
     return {
-        "precision@10": float(np.mean(p_list)),
-        "recall@10": float(np.mean(r_list)),
-        "ndcg@10": float(np.mean(n_list)),
-        "coverage": len(all_recs) / catalog_size if catalog_size else 0.0,
+        "precision@10": precision_val,
+        "recall@10": recall_val,
+        "ndcg@10": ndcg_val,
+        f"precision@{k}": precision_val,
+        f"recall@{k}": recall_val,
+        f"ndcg@{k}": ndcg_val,
+        "coverage": coverage_val,
     }
 
 
 def get_movie_title(movies_df: pd.DataFrame, idx_to_movie: dict[int, int], movie_idx: int) -> str:
-    """Return a movie title for an internal movie index."""
+    
     movie_id = idx_to_movie.get(int(movie_idx))
     if movie_id is None:
         return "Unknown Movie"
@@ -238,7 +247,7 @@ def get_movie_title(movies_df: pd.DataFrame, idx_to_movie: dict[int, int], movie
 
 
 def write_json(path: str | os.PathLike[str], payload: object) -> None:
-    """Write JSON artifact with stable formatting."""
+    
     ensure_project_dirs()
     path_obj = Path(path)
     path_obj.parent.mkdir(parents=True, exist_ok=True)
@@ -247,7 +256,7 @@ def write_json(path: str | os.PathLike[str], payload: object) -> None:
 
 
 def write_csv(path: str | os.PathLike[str], rows: list[dict[str, object]]) -> None:
-    """Write a list of dictionaries as a CSV artifact."""
+    
     ensure_project_dirs()
     if not rows:
         return

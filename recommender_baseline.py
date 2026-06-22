@@ -1,4 +1,4 @@
-"""Task 2: Temporal popularity baseline and ranking metrics."""
+
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from recommender_common import (
 
 
 def main() -> None:
-    """Run the train-only popularity baseline over K=1..20."""
+    
     set_reproducible_seed()
     ratings, movies = load_movielens()
     user_to_idx, _, movie_to_idx, _ = create_mappings(ratings, movies)
@@ -63,8 +63,8 @@ def main() -> None:
     for k in range(1, 21):
         metrics = evaluate_recommender(make_recommender(k), test_user_movies, num_users, catalog_size, k=k)
         print(
-            f"{k:>2}     {metrics['precision@10']:.3f}      {metrics['recall@10']:.3f}      "
-            f"{metrics['ndcg@10']:.3f}      {metrics['coverage']:.3f}"
+            f"{k:>2}     {metrics[f'precision@{k}']:.3f}      {metrics[f'recall@{k}']:.3f}      "
+            f"{metrics[f'ndcg@{k}']:.3f}      {metrics['coverage']:.3f}"
         )
 
 

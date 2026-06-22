@@ -1,4 +1,4 @@
-"""Shared configuration for the Movie Recommendation System project."""
+
 
 from __future__ import annotations
 
@@ -32,20 +32,20 @@ API_ARTIFACT_PATH = ARTIFACT_DIR / "api_model_state.pkl"
 
 
 def ensure_project_dirs() -> None:
-    """Create portable output directories used by scripts and tests."""
+    
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def set_reproducible_seed(seed: int = RANDOM_SEED) -> None:
-    """Seed all project-level pseudo-random generators."""
+    
     random.seed(seed)
     np.random.seed(seed)
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Return a consistently configured project logger."""
+    
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",

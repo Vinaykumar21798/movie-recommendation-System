@@ -1,4 +1,4 @@
-"""Task 4: Cross-platform MinHash LSH movie similarity benchmark."""
+
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from recommender_common import download_and_extract_dataset, write_csv, write_js
 
 
 def load_movie_user_data(dataset_path: str) -> tuple[dict[int, set[int]], list[int], pd.DataFrame, pd.DataFrame]:
-    """Load ratings and represent each rated movie as a set of user indices."""
+    
     ratings = pd.read_csv(f"{dataset_path}/ratings.csv")
     movies = pd.read_csv(f"{dataset_path}/movies.csv")
 
@@ -40,7 +40,7 @@ def compute_exact_jaccard_sparse(
     num_users: int,
     k: int,
 ) -> tuple[dict[int, list[tuple[float, int]]], float]:
-    """Compute exact top-k Jaccard neighbors using sparse matrix multiplication."""
+    
     row_indices: list[int] = []
     col_indices: list[int] = []
     for movie_idx, users in movie_users.items():
@@ -85,7 +85,7 @@ def compute_exact_jaccard_sparse(
 
 
 def run_brute_force_jaccard_benchmark(movie_users: dict[int, set[int]], num_movies: int) -> float:
-    """Benchmark a partial naive all-pairs loop and extrapolate full runtime."""
+    
     sample_size = min(1000, num_movies)
     t0 = time.perf_counter()
     for i in range(sample_size):
@@ -101,7 +101,7 @@ def run_brute_force_jaccard_benchmark(movie_users: dict[int, set[int]], num_movi
 
 
 def build_minhashes(movie_users: dict[int, set[int]], num_perm: int) -> dict[int, MinHash]:
-    """Build MinHash signatures for every movie."""
+    
     minhashes: dict[int, MinHash] = {}
     for movie_idx, users in movie_users.items():
         minhash = MinHash(num_perm=num_perm)
@@ -121,7 +121,7 @@ def evaluate_lsh_threshold(
     num_perm: int,
     k: int,
 ) -> dict[str, float]:
-    """Build/query one LSH index and compute recall, runtime, comparisons, and memory."""
+    
     tracemalloc.start()
     t0 = time.perf_counter()
 
@@ -185,7 +185,7 @@ def evaluate_lsh_threshold(
 
 
 def main() -> None:
-    """Run the LSH benchmark and automatically select the best threshold."""
+    
     parser = argparse.ArgumentParser(description="LSH similarity benchmark for movies")
     parser.add_argument("--num_perm", type=int, default=128)
     parser.add_argument("--thresholds", type=float, nargs="+", default=list(LSH_THRESHOLDS))

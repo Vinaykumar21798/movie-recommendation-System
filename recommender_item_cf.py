@@ -1,4 +1,4 @@
-"""Task 3: Item-based collaborative filtering without test-set tuning leakage."""
+
 
 from __future__ import annotations
 
@@ -31,14 +31,14 @@ from recommender_common import (
 
 
 def get_movie_neighbors(S: sp.csr_matrix, movie_idx: int, k: int = 20) -> list[tuple[float, int]]:
-    """Return top-k cosine neighbors for one movie using heapq."""
+    
     row = S[movie_idx]
     candidates = [(float(sim), int(col)) for col, sim in zip(row.indices, row.data) if col != movie_idx]
     return heapq.nlargest(k, candidates, key=lambda x: x[0])
 
 
 def build_item_similarity(train_matrix: sp.csr_matrix) -> sp.csr_matrix:
-    """Compute sparse item-item cosine similarity from train-only ratings."""
+    
     movie_user = train_matrix.T.tocsr()
     row_norms = np.sqrt(movie_user.power(2).sum(axis=1).A1)
     row_norms[row_norms == 0] = 1.0
@@ -47,7 +47,7 @@ def build_item_similarity(train_matrix: sp.csr_matrix) -> sp.csr_matrix:
 
 
 def build_movie_neighbors(S: sp.csr_matrix, k: int = 20) -> dict[int, list[tuple[float, int]]]:
-    """Precompute top-k neighbors for every movie."""
+    
     return {movie_idx: get_movie_neighbors(S, movie_idx, k=k) for movie_idx in range(S.shape[0])}
 
 
@@ -56,7 +56,7 @@ def build_user_train_ratings(
     user_to_idx: dict[int, int],
     movie_to_idx: dict[int, int],
 ) -> dict[int, list[tuple[int, float]]]:
-    """Return {user_idx: [(movie_idx, rating), ...]} from train rows only."""
+    
     user_train_ratings: dict[int, list[tuple[int, float]]] = defaultdict(list)
     for row in train_df.itertuples(index=False):
         user_train_ratings[user_to_idx[int(row.userId)]].append(
@@ -69,7 +69,7 @@ def liked_movies_by_user(
     user_train_ratings: dict[int, list[tuple[int, float]]],
     threshold: float,
 ) -> dict[int, list[int]]:
-    """Return train-only liked movies per user for a threshold."""
+    
     return {
         user_idx: [movie_idx for movie_idx, rating in ratings if rating >= threshold]
         for user_idx, ratings in user_train_ratings.items()
@@ -85,7 +85,7 @@ def recommend_for_user(
     popular_fallback: Iterable[int] | None = None,
     movie_to_idx: dict[int, int] | None = None,
 ) -> list[tuple[int, float]]:
-    """Aggregate neighbor similarities from train-only liked items."""
+    
     liked_movies = train_user_liked.get(user_idx, [])
     watched = train_user_watched.get(user_idx, set())
 
@@ -95,20 +95,17 @@ def recommend_for_user(
             if neighbor_idx not in watched:
                 candidate_scores[neighbor_idx] += sim
 
-    if candidate_scores:
-        return heapq.nlargest(top_n, candidate_scores.items(), key=lambda x: x[1])
+    recs = heapq.nlargest(top_n, candidate_scores.items(), key=lambda x: x[1])
 
-    if popular_fallback is None or movie_to_idx is None:
-        return []
-
-    recs: list[int] = []
-    for movie_id in popular_fallback:
-        movie_idx = movie_to_idx[int(movie_id)]
-        if movie_idx not in watched:
-            recs.append(movie_idx)
-            if len(recs) == top_n:
-                break
-    return [(movie_idx, 0.0) for movie_idx in recs]
+    if len(recs) < top_n and popular_fallback is not None and movie_to_idx is not None:
+        seen_recs = {item[0] for item in recs}
+        for movie_id in popular_fallback:
+            movie_idx = movie_to_idx[int(movie_id)]
+            if movie_idx not in watched and movie_idx not in seen_recs:
+                recs.append((movie_idx, 0.0))
+                if len(recs) == top_n:
+                    break
+    return recs
 
 
 def evaluate_item_cf_threshold(
@@ -123,7 +120,7 @@ def evaluate_item_cf_threshold(
     catalog_size: int,
     k: int = TOP_K,
 ) -> dict[str, float]:
-    """Evaluate one threshold on validation or test data."""
+    
     train_user_liked = liked_movies_by_user(user_train_ratings, threshold)
 
     def _recommender(user_idx: int) -> list[int]:
@@ -150,7 +147,7 @@ def popularity_recommender_metrics(
     catalog_size: int,
     k: int = TOP_K,
 ) -> dict[str, float]:
-    """Evaluate the train-only popularity baseline on an evaluation split."""
+    
     def _recommender(user_idx: int) -> list[int]:
         watched = train_user_watched.get(user_idx, set())
         recs: list[int] = []
@@ -166,12 +163,12 @@ def popularity_recommender_metrics(
 
 
 def sparse_csr_memory_mb(matrix: sp.csr_matrix) -> float:
-    """Return CSR storage footprint in megabytes."""
+    
     return (matrix.data.nbytes + matrix.indices.nbytes + matrix.indptr.nbytes) / (1024 * 1024)
 
 
 def main() -> None:
-    """Run leakage-safe Item-CF evaluation."""
+    
     ensure_project_dirs()
     set_reproducible_seed()
 

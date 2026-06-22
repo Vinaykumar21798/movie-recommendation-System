@@ -1,4 +1,4 @@
-"""Unit tests for shared recommender correctness guarantees."""
+
 
 from __future__ import annotations
 
@@ -73,4 +73,13 @@ def test_genre_cold_start_returns_valid_recommendations() -> None:
     assert user_recs
     assert all(title != "Toy Story (1995)" for title, _ in user_recs)
     assert movie_recs[0][0] in {"Toy Story (1995)", "Space Comedy"}
+
+
+def test_cluster_entropy_calculation() -> None:
+    genre_labels = {0: "Action", 1: "Action", 2: "Drama", 3: "Comedy"}
+    pure = cluster_quality([[0, 1]], genre_labels, num_movies=2)
+    mixed = cluster_quality([[0, 2]], genre_labels, num_movies=2)
+
+    assert pure["entropy"] == 0.0
+    assert abs(mixed["entropy"] - 1.0) < 1e-9
 

@@ -1,4 +1,4 @@
-"""Project benchmark and final evaluation report runner."""
+
 
 from __future__ import annotations
 
@@ -22,14 +22,14 @@ FULL_BENCHMARK_COMMANDS = [
 
 
 def run_command(args: list[str]) -> tuple[int, float]:
-    """Run one Python script and return exit code and elapsed seconds."""
+    
     t0 = time.perf_counter()
     completed = subprocess.run([sys.executable, *args], check=False)
     return completed.returncode, time.perf_counter() - t0
 
 
 def write_final_report(rows: list[dict[str, object]], quick: bool) -> Path:
-    """Write a compact remediation validation report."""
+    
     ensure_project_dirs()
     report_path = REPORT_DIR / "final_evaluation_report.md"
     status = "PASS" if all(row["exit_code"] == 0 for row in rows) else "FAIL"
@@ -62,7 +62,7 @@ def write_final_report(rows: list[dict[str, object]], quick: bool) -> Path:
 
 
 def main() -> None:
-    """Run quick or full benchmark validation."""
+    
     parser = argparse.ArgumentParser(description="Run project remediation benchmarks")
     parser.add_argument("--full", action="store_true", help="Run all task scripts; otherwise run API eval only")
     args = parser.parse_args()

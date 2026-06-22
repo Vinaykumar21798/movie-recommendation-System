@@ -1,4 +1,4 @@
-"""Task 7: All-user MMR diversity and cold-start evaluation."""
+
 
 from __future__ import annotations
 
@@ -28,14 +28,14 @@ from recommender_common import (
 
 
 def parse_genres(genre_string: str) -> list[str]:
-    """Split a MovieLens genre string into clean genre labels."""
+    
     if pd.isna(genre_string) or not genre_string:
         return []
     return [genre for genre in str(genre_string).split("|") if genre and genre != "(no genres listed)"]
 
 
 def normalize_scores(scores: dict[int, float]) -> dict[int, float]:
-    """Min-max normalize a score dictionary to [0, 1]."""
+    
     if not scores:
         return {}
     values = list(scores.values())
@@ -47,7 +47,7 @@ def normalize_scores(scores: dict[int, float]) -> dict[int, float]:
 
 
 class MMRReRanker:
-    """Maximal Marginal Relevance re-ranker."""
+    
 
     def __init__(self, lambda_param: float) -> None:
         self.lambda_param = lambda_param
@@ -60,7 +60,7 @@ class MMRReRanker:
         movie_idx_map: dict[int, int],
         top_n: int = TOP_K,
     ) -> list[int]:
-        """Re-rank movieIds by lambda*relevance - (1-lambda)*max_similarity."""
+        
         selected: list[int] = []
         remaining = set(candidate_movies)
         norm_relevance = normalize_scores(relevance_scores)
@@ -90,7 +90,7 @@ class MMRReRanker:
 
 
 class GenreColdStart:
-    """Content-based cold-start helper using genre vectors."""
+    
 
     def __init__(self, movies_df: pd.DataFrame) -> None:
         self.movies_df = movies_df.copy()
@@ -105,7 +105,7 @@ class GenreColdStart:
         self.normalized_genre_matrix = self.genre_matrix / norms[:, None]
 
     def encode_genres(self, genre_list: list[str]) -> np.ndarray:
-        """Encode a new movie's genres into the fitted genre space."""
+        
         row = np.zeros((1, len(self.all_genres)))
         genre_to_col = {genre: idx for idx, genre in enumerate(self.all_genres)}
         for genre in genre_list:
@@ -119,7 +119,7 @@ class GenreColdStart:
         top_n: int = TOP_K,
         popularity: dict[int, int] | None = None,
     ) -> list[tuple[str, float]]:
-        """Recommend catalog movies from liked titles only."""
+        
         liked_movies = self.movies_df[self.movies_df["title"].isin(liked_titles)]
         if liked_movies.empty:
             return []
@@ -153,7 +153,7 @@ class GenreColdStart:
         top_n: int = TOP_K,
         popularity: dict[int, int] | None = None,
     ) -> list[tuple[str, float]]:
-        """Find similar catalog movies for a new item with no interactions."""
+        
         new_genres = set(genre_list)
         results: list[tuple[str, int, float, int]] = []
         for row in self.movies_df.itertuples(index=False):
@@ -174,7 +174,7 @@ class GenreColdStart:
 
 
 def diversity_score(movie_ids: list[int], normalized_feature_matrix: np.ndarray, movie_idx_map: dict[int, int]) -> float:
-    """Average pairwise dissimilarity among recommended movieIds."""
+    
     valid_ids = [movie_id for movie_id in movie_ids if movie_id in movie_idx_map]
     if len(valid_ids) < 2:
         return 0.0
@@ -188,25 +188,25 @@ def diversity_score(movie_ids: list[int], normalized_feature_matrix: np.ndarray,
 
 
 def build_popularity_rank(train_df: pd.DataFrame) -> dict[int, int]:
-    """Return movieId -> popularity rank, where rank 1 is most popular."""
+    
     counts = train_df["movieId"].value_counts()
     return {int(movie_id): rank for rank, movie_id in enumerate(counts.index, start=1)}
 
 
-def novelty_score(movie_ids: list[int], popularity_rank: dict[int, int], catalog_size: int) -> float:
-    """Average normalized popularity rank; higher means less globally popular."""
-    if not movie_ids or catalog_size <= 1:
+def novelty_score(movie_ids: list[int], train_counts: dict[int, int], num_users: int) -> float:
+    
+    if not movie_ids or num_users <= 0:
         return 0.0
-    default_rank = catalog_size
-    values = [
-        (popularity_rank.get(int(movie_id), default_rank) - 1) / (catalog_size - 1)
-        for movie_id in movie_ids
-    ]
-    return float(np.mean(values))
+    self_infos: list[float] = []
+    for movie_id in movie_ids:
+        cnt = train_counts.get(int(movie_id), 0)
+        p = max(cnt, 1e-9) / num_users
+        self_infos.append(-np.log2(p))
+    return float(np.mean(self_infos))
 
 
 def fit_mf_scores(train_matrix: sp.csr_matrix, n_factors: int = 50) -> np.ndarray:
-    """Fit SVD and return dense prediction scores."""
+    
     svd = TruncatedSVD(n_components=n_factors, random_state=42)
     user_factors = svd.fit_transform(train_matrix)
     movie_factors = svd.components_.T
@@ -220,7 +220,7 @@ def top_candidate_pool(
     movie_idx_map: dict[int, int],
     pool_size: int = 50,
 ) -> tuple[list[int], dict[int, float]]:
-    """Return candidate movieIds and relevance scores from dense MF scores."""
+    
     masked = scores.copy()
     if watched:
         masked[list(watched)] = -np.inf
@@ -246,14 +246,14 @@ def evaluate_mmr_strategy(
     idx_to_movie: dict[int, int],
     movie_to_idx: dict[int, int],
     cold_start: GenreColdStart,
-    popularity_rank: dict[int, int],
+    popularity: dict[int, int],
     lambda_param: float | None,
     num_users: int,
     num_movies: int,
     pool_size: int = 50,
     k: int = TOP_K,
 ) -> dict[str, float]:
-    """Evaluate pure MF or MMR-reranked MF for every user."""
+    
     reranker = MMRReRanker(lambda_param) if lambda_param is not None else None
     p_list: list[float] = []
     r_list: list[float] = []
@@ -281,21 +281,33 @@ def evaluate_mmr_strategy(
                 cold_start.movie_idx,
                 top_n=k,
             )
+        if len(rec_movie_ids) < k:
+            popular_movies = sorted(popularity.keys(), key=lambda x: popularity[x], reverse=True)
+            seen_ids = set(rec_movie_ids)
+            watched_ids = {idx_to_movie[w_idx] for w_idx in watched if w_idx in idx_to_movie}
+            for m_id in popular_movies:
+                if m_id not in watched_ids and m_id not in seen_ids:
+                    rec_movie_ids.append(m_id)
+                    if len(rec_movie_ids) == k:
+                        break
         rec_indices = [movie_to_idx[movie_id] for movie_id in rec_movie_ids if movie_id in movie_to_idx]
         all_recs.update(rec_indices)
         test_movies = eval_user_movies.get(user_idx, set())
-        p_list.append(precision_at_k(rec_indices, test_movies, k))
-        r_list.append(recall_at_k(rec_indices, test_movies, k))
-        n_list.append(ndcg_at_k(rec_indices, test_movies, k))
+        if test_movies:
+            p_list.append(precision_at_k(rec_indices, test_movies, k))
+            r_list.append(recall_at_k(rec_indices, test_movies, k))
+            n_list.append(ndcg_at_k(rec_indices, test_movies, k))
         d_list.append(diversity_score(rec_movie_ids, cold_start.normalized_genre_matrix, cold_start.movie_idx))
-        novelty_list.append(novelty_score(rec_movie_ids, popularity_rank, num_movies))
+        novelty_list.append(novelty_score(rec_movie_ids, popularity, num_users))
 
-    ndcg = float(np.mean(n_list))
-    diversity = float(np.mean(d_list))
-    novelty = float(np.mean(novelty_list))
+    ndcg = float(np.mean(n_list)) if n_list else 0.0
+    diversity = float(np.mean(d_list)) if d_list else 0.0
+    novelty = float(np.mean(novelty_list)) if novelty_list else 0.0
+    precision_val = float(np.mean(p_list)) if p_list else 0.0
+    recall_val = float(np.mean(r_list)) if r_list else 0.0
     return {
-        "precision@10": float(np.mean(p_list)),
-        "recall@10": float(np.mean(r_list)),
+        "precision@10": precision_val,
+        "recall@10": recall_val,
         "ndcg@10": ndcg,
         "coverage": len(all_recs) / num_movies if num_movies else 0.0,
         "diversity": diversity,
@@ -305,7 +317,7 @@ def evaluate_mmr_strategy(
 
 
 def main() -> None:
-    """Run full all-user MMR and cold-start validation."""
+    
     ensure_project_dirs()
     set_reproducible_seed()
 
@@ -340,7 +352,7 @@ def main() -> None:
         idx_to_movie,
         movie_to_idx,
         cold_start,
-        popularity_rank,
+        popularity,
         lambda_param=None,
         num_users=num_users,
         num_movies=num_movies,
@@ -356,7 +368,7 @@ def main() -> None:
             idx_to_movie,
             movie_to_idx,
             cold_start,
-            popularity_rank,
+            popularity,
             lambda_param=lam,
             num_users=num_users,
             num_movies=num_movies,
@@ -380,7 +392,7 @@ def main() -> None:
         idx_to_movie,
         movie_to_idx,
         cold_start,
-        popularity_rank,
+        popularity,
         lambda_param=None,
         num_users=num_users,
         num_movies=num_movies,
@@ -392,7 +404,7 @@ def main() -> None:
         idx_to_movie,
         movie_to_idx,
         cold_start,
-        popularity_rank,
+        popularity,
         lambda_param=best_lambda,
         num_users=num_users,
         num_movies=num_movies,

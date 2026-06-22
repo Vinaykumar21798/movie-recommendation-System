@@ -2,6 +2,7 @@
   "cluster_examples": [
     {
       "dominant_genre": "Comedy",
+      "entropy": 2.8910033392402816,
       "purity": 0.30799735624586916,
       "sample_titles": [
         "Shanghai Triad (Yao a yao yao dao waipo qiao) (1995)",
@@ -14,6 +15,7 @@
     },
     {
       "dominant_genre": "Comedy",
+      "entropy": 2.6057467740424443,
       "purity": 0.3673469387755102,
       "sample_titles": [
         "Surf Nazis Must Die (1987)",
@@ -26,6 +28,7 @@
     },
     {
       "dominant_genre": "Drama",
+      "entropy": 2.612057900560499,
       "purity": 0.38095238095238093,
       "sample_titles": [
         "What Time Is It There? (Ni neibian jidian) (2001)",
@@ -38,6 +41,7 @@
     },
     {
       "dominant_genre": "Action",
+      "entropy": 1.7806390622295665,
       "purity": 0.5,
       "sample_titles": [
         "New York Cop (Ny\u00fb Y\u00f4ku no koppu) (1993)",
@@ -50,6 +54,7 @@
     },
     {
       "dominant_genre": "Horror",
+      "entropy": 2.509288902743936,
       "purity": 0.36666666666666664,
       "sample_titles": [
         "Amityville II: The Possession (1982)",
@@ -64,6 +69,7 @@
   "cluster_thresholds": [
     {
       "clustered_ratio": 0.7897762266475057,
+      "entropy": 2.8607788280704005,
       "largest_cluster_size": 7605.0,
       "largest_component_ratio": 0.7806405255594334,
       "num_clusters": 2086.0,
@@ -74,6 +80,7 @@
     },
     {
       "clustered_ratio": 0.6684459043317594,
+      "entropy": 2.8134986594434452,
       "largest_cluster_size": 6283.0,
       "largest_component_ratio": 0.644939437487169,
       "num_clusters": 3315.0,
@@ -84,6 +91,7 @@
     },
     {
       "clustered_ratio": 0.5622048860603572,
+      "entropy": 2.705181389221558,
       "largest_cluster_size": 4845.0,
       "largest_component_ratio": 0.4973311435023609,
       "num_clusters": 4434.0,
@@ -94,6 +102,7 @@
     },
     {
       "clustered_ratio": 0.4610962841305687,
+      "entropy": 2.4269347432807815,
       "largest_cluster_size": 3026.0,
       "largest_component_ratio": 0.310613836994457,
       "num_clusters": 5550.0,
@@ -119,9 +128,9 @@
     {
       "coverage": 0.010059536029562718,
       "method": "BFS Graph Walk",
-      "ndcg@10": 0.08858972455906493,
-      "precision@10": 0.07409836065573772,
-      "recall@10": 0.04178950012815883
+      "ndcg@10": 0.08844175877929125,
+      "precision@10": 0.0739344262295082,
+      "recall@10": 0.04176296967753714
     },
     {
       "coverage": 0.011907205912543626,

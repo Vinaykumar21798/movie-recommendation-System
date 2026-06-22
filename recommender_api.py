@@ -1,4 +1,4 @@
-"""Task 8: FastAPI recommendation service with persisted artifacts and schemas."""
+
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ ARTIFACT_VERSION = 3
 
 
 class RecommendationItem(BaseModel):
-    """One recommended movie."""
+    
 
     movieId: int
     title: str
@@ -53,7 +53,7 @@ class RecommendationItem(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
-    """Response schema for /recommend."""
+    
 
     user_id: int
     method: str
@@ -62,13 +62,13 @@ class RecommendationResponse(BaseModel):
 
 
 class MethodsResponse(BaseModel):
-    """Response schema for /methods."""
+    
 
     methods: list[str]
 
 
 class MetricRow(BaseModel):
-    """Evaluation metrics for one method."""
+    
 
     precision_at_10: float
     recall_at_10: float
@@ -78,14 +78,14 @@ class MetricRow(BaseModel):
 
 
 class CompareResponse(BaseModel):
-    """Response schema for /compare."""
+    
 
     comparison: dict[str, MetricRow]
     winner: dict[str, str]
 
 
 class HealthResponse(BaseModel):
-    """Response schema for /health."""
+    
 
     status: str
     loaded: bool
@@ -95,7 +95,7 @@ class HealthResponse(BaseModel):
 
 
 class ModelState:
-    """Container for loaded data and recommender artifacts."""
+    
 
     def __init__(self) -> None:
         self.loaded = False
@@ -122,7 +122,7 @@ class ModelState:
         self.comparison: dict[str, dict[str, float]] | None = None
 
     def to_artifact(self) -> dict[str, Any]:
-        """Serialize model state into a pickle-safe dictionary."""
+        
         return {
             "artifact_version": ARTIFACT_VERSION,
             "ratings": self.ratings,
@@ -149,7 +149,7 @@ class ModelState:
         }
 
     def load_artifact(self, payload: dict[str, Any]) -> None:
-        """Populate state from a persisted artifact."""
+        
         for key, value in payload.items():
             if key != "artifact_version":
                 setattr(self, key, value)
@@ -160,14 +160,14 @@ state = ModelState()
 
 
 def _persist_state() -> None:
-    """Write the current model state to the artifact directory."""
+    
     ensure_project_dirs()
     with API_ARTIFACT_PATH.open("wb") as f:
         pickle.dump(state.to_artifact(), f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def _load_persisted_state() -> bool:
-    """Load persisted model state if the artifact version matches."""
+    
     if not API_ARTIFACT_PATH.exists():
         return False
     try:
@@ -184,7 +184,7 @@ def _load_persisted_state() -> bool:
 
 
 def load_all_models(force_rebuild: bool = False) -> None:
-    """Load models once, preferring persisted artifacts when available."""
+    
     if state.loaded and not force_rebuild:
         return
 
@@ -301,7 +301,16 @@ def _recommend_mf(
     if watched:
         scores[list(watched)] = -np.inf
     top_idx = np.argsort(scores)[::-1][:n]
-    return [(int(movie_idx), float(scores[movie_idx])) for movie_idx in top_idx if scores[movie_idx] > -np.inf]
+    recs = [(int(movie_idx), float(scores[movie_idx])) for movie_idx in top_idx if scores[movie_idx] > -np.inf]
+    if len(recs) < n:
+        seen = {item[0] for item in recs}
+        for movie_id in state.popular_movies:
+            movie_idx = state.movie_to_idx[movie_id]
+            if movie_idx not in watched and movie_idx not in seen:
+                recs.append((movie_idx, 0.0))
+                if len(recs) == n:
+                    break
+    return recs
 
 
 def _recommend_graph(
@@ -317,9 +326,8 @@ def _recommend_graph(
         state.movie_to_idx,
         watched_source,
         top_n=n,
+        popular_fallback=state.popular_movies,
     )
-    if not recs:
-        return _recommend_popularity(user_idx, n, watched_source)
     return [(movie_idx, float(n - rank)) for rank, movie_idx in enumerate(recs)]
 
 
@@ -344,7 +352,7 @@ def _normalize(items: list[tuple[int, float]]) -> list[tuple[int, float]]:
 
 @functools.lru_cache(maxsize=4096)
 def cached_recommend(user_id: int, n: int, method: str) -> tuple[tuple[int, str, float], ...] | None:
-    """Return cached recommendation tuples or None for an unknown user."""
+    
     if user_id not in state.user_to_idx:
         return None
     user_idx = state.user_to_idx[user_id]
@@ -359,7 +367,7 @@ def cached_recommend(user_id: int, n: int, method: str) -> tuple[tuple[int, str,
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI startup hook."""
+    
     load_all_models()
     yield
 
@@ -377,7 +385,7 @@ def recommend_endpoint(
     n: int = Query(TOP_K, ge=1, le=50),
     method: str = Query("mf", description="popularity | item_cf | mf | graph"),
 ) -> RecommendationResponse:
-    """Return top-N recommendations for a user."""
+    
     if not state.loaded:
         raise HTTPException(503, "Models are still loading")
     if method not in METHODS:
@@ -402,13 +410,13 @@ def recommend_endpoint(
 
 @app.get("/methods", response_model=MethodsResponse)
 def list_methods() -> MethodsResponse:
-    """List supported recommendation methods."""
+    
     return MethodsResponse(methods=list(METHODS.keys()))
 
 
 @app.get("/health", response_model=HealthResponse)
 def health_endpoint() -> HealthResponse:
-    """Return service readiness metadata."""
+    
     return HealthResponse(
         status="ok" if state.loaded else "loading",
         loaded=state.loaded,
@@ -420,7 +428,7 @@ def health_endpoint() -> HealthResponse:
 
 @app.get("/compare", response_model=CompareResponse)
 def compare_methods() -> CompareResponse:
-    """Return held-out comparison metrics for all API recommenders."""
+    
     if not state.loaded:
         raise HTTPException(503, "Models are still loading")
     if state.comparison is None:
@@ -431,7 +439,7 @@ def compare_methods() -> CompareResponse:
 
 
 def _build_comparison_results() -> dict[str, dict[str, float]]:
-    """Evaluate API methods on the common temporal test split."""
+    
     results: dict[str, dict[str, float]] = {}
     for method_name, func in METHODS.items():
         t0 = time.perf_counter()
@@ -453,7 +461,7 @@ def _build_comparison_results() -> dict[str, dict[str, float]]:
 
 
 def _schema_comparison(results: dict[str, dict[str, float]]) -> dict[str, MetricRow]:
-    """Convert metric dictionaries to Pydantic-friendly field names."""
+    
     return {
         method: MetricRow(
             precision_at_10=round(metrics["precision@10"], 4),
@@ -467,7 +475,7 @@ def _schema_comparison(results: dict[str, dict[str, float]]) -> dict[str, Metric
 
 
 def _pick_winner(results: dict[str, dict[str, float]], speed_limit_ms: float = 10.0) -> dict[str, str]:
-    """Choose best NDCG@10 method under the latency budget."""
+    
     fast_methods = [method for method, row in results.items() if row["ms_per_req"] < speed_limit_ms]
     eligible = fast_methods if fast_methods else list(results.keys())
     winner = max(eligible, key=lambda method: results[method]["ndcg@10"])
@@ -476,7 +484,7 @@ def _pick_winner(results: dict[str, dict[str, float]], speed_limit_ms: float = 1
 
 
 def demonstrate_caching() -> dict[str, float]:
-    """Measure cold and warm cached request latency."""
+    
     cached_recommend.cache_clear()
     user_id = state.idx_to_user[0]
     t0 = time.perf_counter()
@@ -496,7 +504,7 @@ def demonstrate_caching() -> dict[str, float]:
 
 
 def run_validation_report() -> dict[str, Any]:
-    """Run cache and comparison validation and persist an API report."""
+    
     cache = demonstrate_caching()
     comparison = _build_comparison_results()
     state.comparison = comparison
@@ -512,7 +520,7 @@ def run_validation_report() -> dict[str, Any]:
 
 
 def main() -> None:
-    """CLI entry point."""
+    
     parser = argparse.ArgumentParser(description="Task 8 Recommendation API")
     parser.add_argument("--eval-only", action="store_true")
     parser.add_argument("--rebuild-artifacts", action="store_true")
