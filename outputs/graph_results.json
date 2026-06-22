@@ -1,0 +1,135 @@
+{
+  "cluster_examples": [
+    {
+      "dominant_genre": "Comedy",
+      "purity": 0.30799735624586916,
+      "sample_titles": [
+        "Shanghai Triad (Yao a yao yao dao waipo qiao) (1995)",
+        "It Takes Two (1995)",
+        "Big Green, The (1995)",
+        "Big Bully (1996)",
+        "Nico Icon (1995)"
+      ],
+      "size": 3026
+    },
+    {
+      "dominant_genre": "Comedy",
+      "purity": 0.3673469387755102,
+      "sample_titles": [
+        "Surf Nazis Must Die (1987)",
+        "Santa Sangre (1989)",
+        "Dresser, The (1983)",
+        "Dog Days (Hundstage) (2001)",
+        "Tanguy (2001)"
+      ],
+      "size": 49
+    },
+    {
+      "dominant_genre": "Drama",
+      "purity": 0.38095238095238093,
+      "sample_titles": [
+        "What Time Is It There? (Ni neibian jidian) (2001)",
+        "Zazie dans le m\u00e9tro (1960)",
+        "Make Way for Tomorrow (1937)",
+        "Pickpocket (1959)",
+        "Begotten (1990)"
+      ],
+      "size": 42
+    },
+    {
+      "dominant_genre": "Action",
+      "purity": 0.5,
+      "sample_titles": [
+        "New York Cop (Ny\u00fb Y\u00f4ku no koppu) (1993)",
+        "Maximum Risk (1996)",
+        "Fire Down Below (1997)",
+        "D\u00e9j\u00e0 Vu (1997)",
+        "Knock Off (1998)"
+      ],
+      "size": 32
+    },
+    {
+      "dominant_genre": "Horror",
+      "purity": 0.36666666666666664,
+      "sample_titles": [
+        "Amityville II: The Possession (1982)",
+        "Friday the 13th Part V: A New Beginning (1985)",
+        "Eaten Alive (1977)",
+        "Fuzz (1972)",
+        "When a Stranger Calls (1979)"
+      ],
+      "size": 30
+    }
+  ],
+  "cluster_thresholds": [
+    {
+      "clustered_ratio": 0.7897762266475057,
+      "largest_cluster_size": 7605.0,
+      "largest_component_ratio": 0.7806405255594334,
+      "num_clusters": 2086.0,
+      "num_non_singleton_clusters": 38.0,
+      "purity": 0.28918637899662075,
+      "selection_score": 0.05010006473314111,
+      "threshold": 0.5
+    },
+    {
+      "clustered_ratio": 0.6684459043317594,
+      "largest_cluster_size": 6283.0,
+      "largest_component_ratio": 0.644939437487169,
+      "num_clusters": 3315.0,
+      "num_non_singleton_clusters": 85.0,
+      "purity": 0.3012899262899263,
+      "selection_score": 0.07150778317082473,
+      "threshold": 0.6
+    },
+    {
+      "clustered_ratio": 0.5622048860603572,
+      "largest_cluster_size": 4845.0,
+      "largest_component_ratio": 0.4973311435023609,
+      "num_clusters": 4434.0,
+      "num_non_singleton_clusters": 169.0,
+      "purity": 0.32901223297425597,
+      "selection_score": 0.0929798069604543,
+      "threshold": 0.7
+    },
+    {
+      "clustered_ratio": 0.4610962841305687,
+      "largest_cluster_size": 3026.0,
+      "largest_component_ratio": 0.310613836994457,
+      "num_clusters": 5550.0,
+      "num_non_singleton_clusters": 300.0,
+      "purity": 0.384906500445236,
+      "selection_score": 0.12235153724456826,
+      "threshold": 0.8
+    }
+  ],
+  "graph": {
+    "edges": 80896,
+    "movie_nodes": 8247,
+    "user_nodes": 610
+  },
+  "recommender_metrics": [
+    {
+      "coverage": 0.010059536029562718,
+      "method": "Popularity",
+      "ndcg@10": 0.08649125687295463,
+      "precision@10": 0.07180327868852458,
+      "recall@10": 0.03884627461936912
+    },
+    {
+      "coverage": 0.010059536029562718,
+      "method": "BFS Graph Walk",
+      "ndcg@10": 0.08858972455906493,
+      "precision@10": 0.07409836065573772,
+      "recall@10": 0.04178950012815883
+    },
+    {
+      "coverage": 0.011907205912543626,
+      "method": "Personalized PageRank",
+      "ndcg@10": 0.10100617714128968,
+      "precision@10": 0.08622950819672132,
+      "recall@10": 0.05357850742199977
+    }
+  ],
+  "selected_cluster_threshold": 0.8
+}

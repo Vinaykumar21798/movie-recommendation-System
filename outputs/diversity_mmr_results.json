@@ -1,0 +1,159 @@
+{
+  "cold_start_movie_sample": [
+    [
+      "Toy Story (1995)",
+      1.0
+    ],
+    [
+      "Monsters, Inc. (2001)",
+      1.0
+    ],
+    [
+      "Toy Story 2 (1999)",
+      1.0
+    ],
+    [
+      "Antz (1998)",
+      1.0
+    ],
+    [
+      "Emperor's New Groove, The (2000)",
+      1.0
+    ],
+    [
+      "Shrek the Third (2007)",
+      1.0
+    ],
+    [
+      "Adventures of Rocky and Bullwinkle, The (2000)",
+      1.0
+    ],
+    [
+      "Moana (2016)",
+      1.0
+    ],
+    [
+      "Tale of Despereaux, The (2008)",
+      1.0
+    ],
+    [
+      "The Good Dinosaur (2015)",
+      1.0
+    ]
+  ],
+  "cold_start_user_sample": [
+    [
+      "Gnomeo & Juliet (2011)",
+      1.0
+    ],
+    [
+      "Puss in Boots (Nagagutsu o haita neko) (1969)",
+      1.0
+    ],
+    [
+      "Enchanted (2007)",
+      0.8571428571428571
+    ],
+    [
+      "Monsters, Inc. (2001)",
+      0.8333333333333334
+    ],
+    [
+      "Toy Story 2 (1999)",
+      0.8333333333333334
+    ],
+    [
+      "Antz (1998)",
+      0.8333333333333334
+    ],
+    [
+      "Emperor's New Groove, The (2000)",
+      0.8333333333333334
+    ],
+    [
+      "Shrek the Third (2007)",
+      0.8333333333333334
+    ],
+    [
+      "Adventures of Rocky and Bullwinkle, The (2000)",
+      0.8333333333333334
+    ],
+    [
+      "Moana (2016)",
+      0.8333333333333334
+    ]
+  ],
+  "cold_start_validation": {
+    "new_movie_non_empty": true,
+    "new_movie_vector_has_genres": true,
+    "new_user_excludes_liked_titles": true,
+    "new_user_non_empty": true
+  },
+  "selected_lambda": 0.3,
+  "selection_rule": "max(validation NDCG@10 + validation Diversity)",
+  "test_comparison": [
+    {
+      "coverage": 0.06333401765551222,
+      "diversity": 0.6825884430518182,
+      "lambda": null,
+      "method": "Before MMR",
+      "ndcg@10": 0.08359115166076456,
+      "novelty": 0.013518220265533043,
+      "precision@10": 0.07540983606557378,
+      "recall@10": 0.04400613147285067,
+      "utility": 0.7661795947125828
+    },
+    {
+      "coverage": 0.06887702730445494,
+      "diversity": 0.8213252455156721,
+      "lambda": 0.3,
+      "method": "After MMR",
+      "ndcg@10": 0.07944170692966983,
+      "novelty": 0.01711680054392369,
+      "precision@10": 0.07114754098360657,
+      "recall@10": 0.041048563264349885,
+      "utility": 0.9007669524453419
+    }
+  ],
+  "validation_baseline": {
+    "coverage": 0.06333401765551222,
+    "diversity": 0.6825884430518182,
+    "ndcg@10": 0.1416244441220808,
+    "novelty": 0.013518220265533043,
+    "precision@10": 0.12622950819672132,
+    "recall@10": 0.08686232305241379,
+    "utility": 0.824212887173899
+  },
+  "validation_sweep": [
+    {
+      "coverage": 0.06887702730445494,
+      "diversity": 0.8213252455156721,
+      "lambda": 0.3,
+      "ndcg@10": 0.12648817639818077,
+      "novelty": 0.01711680054392369,
+      "precision@10": 0.11180327868852459,
+      "recall@10": 0.07651426161577592,
+      "utility": 0.9478134219138529
+    },
+    {
+      "coverage": 0.06497639088482858,
+      "diversity": 0.7859285150896029,
+      "lambda": 0.5,
+      "ndcg@10": 0.13337369920542413,
+      "novelty": 0.01504081952066725,
+      "precision@10": 0.1181967213114754,
+      "recall@10": 0.08230322682800781,
+      "utility": 0.9193022142950271
+    },
+    {
+      "coverage": 0.0641552042701704,
+      "diversity": 0.7386731821272726,
+      "lambda": 0.7,
+      "ndcg@10": 0.13864377864566121,
+      "novelty": 0.013772746932435322,
+      "precision@10": 0.12295081967213115,
+      "recall@10": 0.08476071617490961,
+      "utility": 0.8773169607729339
+    }
+  ]
+}

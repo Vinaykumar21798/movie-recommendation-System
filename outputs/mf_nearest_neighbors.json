@@ -1,0 +1,80 @@
+{
+  "Matrix, The (1999)": [
+    {
+      "genres": "Comedy|Drama",
+      "movieId": 92259,
+      "similarity": 0.4447781844767572,
+      "title": "Intouchables (2011)"
+    },
+    {
+      "genres": "Action|Drama|War",
+      "movieId": 2028,
+      "similarity": 0.4044629011205626,
+      "title": "Saving Private Ryan (1998)"
+    },
+    {
+      "genres": "Action|Crime|Drama|IMAX",
+      "movieId": 58559,
+      "similarity": 0.4014832568004857,
+      "title": "Dark Knight, The (2008)"
+    },
+    {
+      "genres": "Action|Crime|Drama|Mystery|Sci-Fi|Thriller|IMAX",
+      "movieId": 79132,
+      "similarity": 0.3887467873621152,
+      "title": "Inception (2010)"
+    }
+  ],
+  "Star Wars: Episode IV - A New Hope (1977)": [
+    {
+      "genres": "Action|Adventure|Sci-Fi",
+      "movieId": 1196,
+      "similarity": 0.7474158590613424,
+      "title": "Star Wars: Episode V - The Empire Strikes Back (1980)"
+    },
+    {
+      "genres": "Action|Adventure|Sci-Fi",
+      "movieId": 1210,
+      "similarity": 0.7145246254880557,
+      "title": "Star Wars: Episode VI - Return of the Jedi (1983)"
+    },
+    {
+      "genres": "Action|Adventure",
+      "movieId": 1198,
+      "similarity": 0.499918216502134,
+      "title": "Raiders of the Lost Ark (Indiana Jones and the Raiders of the Lost Ark) (1981)"
+    },
+    {
+      "genres": "Action|Adventure",
+      "movieId": 1291,
+      "similarity": 0.409569824944478,
+      "title": "Indiana Jones and the Last Crusade (1989)"
+    }
+  ],
+  "Toy Story (1995)": [
+    {
+      "genres": "Action|Adventure|Sci-Fi|Thriller",
+      "movieId": 780,
+      "similarity": 0.5373026656807772,
+      "title": "Independence Day (a.k.a. ID4) (1996)"
+    },
+    {
+      "genres": "Action|Adventure|Thriller",
+      "movieId": 494,
+      "similarity": 0.5368119735071933,
+      "title": "Executive Decision (1996)"
+    },
+    {
+      "genres": "Children|Comedy|Fantasy|Musical",
+      "movieId": 1073,
+      "similarity": 0.5294015027970116,
+      "title": "Willy Wonka & the Chocolate Factory (1971)"
+    },
+    {
+      "genres": "Action|Adventure|Mystery|Thriller",
+      "movieId": 648,
+      "similarity": 0.5157752512635756,
+      "title": "Mission: Impossible (1996)"
+    }
+  ]
+}

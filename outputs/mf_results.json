@@ -1,0 +1,94 @@
+{
+  "comparison": [
+    {
+      "coverage": 0.0074933278587559025,
+      "method": "Popularity Baseline",
+      "ndcg@10": 0.0705687216665185,
+      "precision@10": 0.05770491803278688,
+      "recall@10": 0.03406496070605184
+    },
+    {
+      "coverage": 0.07246971874358447,
+      "method": "Item Collaborative Filtering",
+      "ndcg@10": 0.07924502748380298,
+      "precision@10": 0.07229508196721311,
+      "recall@10": 0.04043518924181574
+    },
+    {
+      "coverage": 0.06333401765551222,
+      "method": "Matrix Factorization SVD k=50",
+      "ndcg@10": 0.08359115166076456,
+      "precision@10": 0.07540983606557378,
+      "recall@10": 0.04400613147285067
+    }
+  ],
+  "factor_dimensions": {
+    "movie_factors": [
+      9742,
+      50
+    ],
+    "user_factors": [
+      610,
+      50
+    ]
+  },
+  "plot_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\mf_recall_sweep.png",
+  "selected_factors": 50,
+  "selection_rule": "highest validation Recall@10, tie-break NDCG@10 then Precision@10",
+  "test_metrics": {
+    "coverage": 0.06333401765551222,
+    "ndcg@10": 0.08359115166076456,
+    "precision@10": 0.07540983606557378,
+    "recall@10": 0.04400613147285067
+  },
+  "validation_sweep": [
+    {
+      "coverage": 0.03520837610346951,
+      "factors": 10.0,
+      "ndcg@10": 0.1463668851568732,
+      "precision@10": 0.13114754098360656,
+      "recall@10": 0.0789494020923942,
+      "train_seconds": 0.24378629997954704
+    },
+    {
+      "coverage": 0.045678505440361325,
+      "factors": 20.0,
+      "ndcg@10": 0.14650174537261637,
+      "precision@10": 0.12918032786885245,
+      "recall@10": 0.08314300863731826,
+      "train_seconds": 0.16754619998391718
+    },
+    {
+      "coverage": 0.06333401765551222,
+      "factors": 50.0,
+      "ndcg@10": 0.1416244441220808,
+      "precision@10": 0.12622950819672132,
+      "recall@10": 0.08686232305241379,
+      "train_seconds": 0.5263803999987431
+    },
+    {
+      "coverage": 0.07678094847053993,
+      "factors": 100.0,
+      "ndcg@10": 0.12687006823033348,
+      "precision@10": 0.10918032786885246,
+      "recall@10": 0.08373836603520897,
+      "train_seconds": 1.2201551999896765
+    },
+    {
+      "coverage": 0.08519811127078629,
+      "factors": 150.0,
+      "ndcg@10": 0.11613022913199215,
+      "precision@10": 0.10131147540983607,
+      "recall@10": 0.07922287165840634,
+      "train_seconds": 4.291293599992059
+    },
+    {
+      "coverage": 0.09761855881749128,
+      "factors": 200.0,
+      "ndcg@10": 0.09332903369203271,
+      "precision@10": 0.08098360655737705,
+      "recall@10": 0.06988901585023963,
+      "train_seconds": 3.7132719999935944
+    }
+  ]
+}
