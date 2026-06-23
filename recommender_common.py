@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import pickle
 import zipfile
 from pathlib import Path
 from typing import Callable, Iterable
@@ -14,7 +15,7 @@ import pandas as pd
 import requests
 import scipy.sparse as sp
 
-from config import DATA_DIR, RANDOM_SEED, ensure_project_dirs, set_reproducible_seed
+from config import DATA_DIR, ARTIFACT_DIR, RANDOM_SEED, ensure_project_dirs, set_reproducible_seed
 
 
 def download_and_extract_dataset(data_dir: str | os.PathLike[str] = DATA_DIR) -> str:
@@ -266,4 +267,85 @@ def write_csv(path: str | os.PathLike[str], rows: list[dict[str, object]]) -> No
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def load_clean_split_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[int, int], dict[int, int], dict[int, int], dict[int, int]]:
+    """Loads the MovieLens dataset and returns (ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie) using a unified 60/20/20 split."""
+    ensure_project_dirs()
+    ratings, movies = load_movielens()
+    
+    train_path = DATA_DIR / "train.csv"
+    val_path = DATA_DIR / "val.csv"
+    test_path = DATA_DIR / "test.csv"
+    
+    if train_path.exists() and val_path.exists() and test_path.exists():
+        print(f"Loading cached dataset splits from {DATA_DIR}...")
+        train_df = pd.read_csv(train_path)
+        val_df = pd.read_csv(val_path)
+        test_df = pd.read_csv(test_path)
+    else:
+        print("Generating deterministic 60% train / 20% val / 20% test splits...")
+        train_df, val_df, test_df = temporal_train_validation_test_split(ratings)
+        verify_temporal_order(train_df, val_df, label="validation")
+        verify_temporal_order(pd.concat([train_df, val_df], ignore_index=True), test_df, label="test")
+        
+        train_df.to_csv(train_path, index=False)
+        val_df.to_csv(val_path, index=False)
+        test_df.to_csv(test_path, index=False)
+        print("Split data cached successfully.")
+        
+    user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
+    return ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie
+
+
+class ModelRegistry:
+    """Manages serialization, version tracking, and loading of recommendation models."""
+    REGISTRY_FILE = ARTIFACT_DIR / "model_registry.json"
+
+    @classmethod
+    def register(cls, model_name: str, payload: dict, metrics: dict, params: dict) -> None:
+        ensure_project_dirs()
+        pkl_path = ARTIFACT_DIR / f"{model_name}_model.pkl"
+        with open(pkl_path, "wb") as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        registry = {}
+        if cls.REGISTRY_FILE.exists():
+            try:
+                with open(cls.REGISTRY_FILE, "r", encoding="utf-8") as f:
+                    registry = json.load(f)
+            except Exception:
+                registry = {}
+        
+        from datetime import datetime
+        registry[model_name] = {
+            "pkl_path": str(pkl_path),
+            "registered_at": datetime.now().isoformat(),
+            "metrics": metrics,
+            "params": params
+        }
+        with open(cls.REGISTRY_FILE, "w", encoding="utf-8") as f:
+            json.dump(registry, f, indent=2, sort_keys=True)
+        print(f"Model '{model_name}' successfully registered inside {cls.REGISTRY_FILE}")
+            
+    @classmethod
+    def get_registered_models(cls) -> dict:
+        if not cls.REGISTRY_FILE.exists():
+            return {}
+        try:
+            with open(cls.REGISTRY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    @classmethod
+    def load_payload(cls, model_name: str) -> dict:
+        models = cls.get_registered_models()
+        if model_name not in models:
+            raise ValueError(f"Model '{model_name}' is not registered in the Model Registry.")
+        pkl_path = Path(models[model_name]["pkl_path"])
+        with open(pkl_path, "rb") as f:
+            import pickle
+            return pickle.load(f)
+
 

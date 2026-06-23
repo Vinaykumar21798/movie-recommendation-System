@@ -1,44 +1,44 @@
 {
-  "artifact_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\api_model_state.pkl",
+  "artifact_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\model_registry.json",
   "cache_benchmark": {
-    "cache_speedup_x": 9043.931140861467,
-    "cold_request_ms": 13.566000008722767,
+    "cache_speedup_x": 10473.70594960918,
+    "cold_request_ms": 14.66329998220317,
     "result_count": 10.0,
     "user_id": 1.0,
-    "warm_request_ms": 0.001500011421740055
+    "warm_request_ms": 0.001400010660290718
   },
   "comparison": {
     "graph": {
-      "coverage": 0.010059536029562718,
-      "ms_per_req": 36.30526704917906,
-      "ndcg@10": 0.08815634776442391,
-      "precision@10": 0.07360655737704919,
-      "recall@10": 0.04138652766175087
+      "coverage": 0.007595976185588175,
+      "ms_per_req": 38.194952131111606,
+      "ndcg@10": 0.06937584732333223,
+      "precision@10": 0.05852459016393443,
+      "recall@10": 0.03290711739776021
     },
     "item_cf": {
-      "coverage": 0.060665161157873126,
-      "ms_per_req": 0.7985240983543918,
-      "ndcg@10": 0.12144959159434907,
-      "precision@10": 0.10688524590163935,
-      "recall@10": 0.06365724554348276
+      "coverage": 0.07678094847053993,
+      "ms_per_req": 0.8037355737989677,
+      "ndcg@10": 0.08115056910250426,
+      "precision@10": 0.07360655737704917,
+      "recall@10": 0.04143383245057894
     },
     "mf": {
-      "coverage": 0.06856908232395811,
-      "ms_per_req": 1.0962927868574492,
-      "ndcg@10": 0.11890856877735625,
-      "precision@10": 0.10459016393442623,
-      "recall@10": 0.06740741506763856
+      "coverage": 0.06333401765551222,
+      "ms_per_req": 1.1604959016368097,
+      "ndcg@10": 0.08359115166076456,
+      "precision@10": 0.07540983606557378,
+      "recall@10": 0.04400613147285067
     },
     "popularity": {
-      "coverage": 0.010059536029562718,
-      "ms_per_req": 0.0664531147359397,
-      "ndcg@10": 0.08649125687295463,
-      "precision@10": 0.07180327868852458,
-      "recall@10": 0.03884627461936912
+      "coverage": 0.0074933278587559025,
+      "ms_per_req": 0.0869242622818584,
+      "ndcg@10": 0.0705687216665185,
+      "precision@10": 0.05770491803278688,
+      "recall@10": 0.03406496070605184
     }
   },
   "winner": {
-    "method": "item_cf",
+    "method": "mf",
     "rule": "best ndcg@10 under 10ms"
   }
 }

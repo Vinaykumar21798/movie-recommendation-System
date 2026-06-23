@@ -7,28 +7,18 @@ import numpy as np
 from config import TOP_K, set_reproducible_seed
 from recommender_common import (
     build_user_movie_sets,
-    create_mappings,
-    download_and_extract_dataset,
     evaluate_recommender,
-    load_movielens,
-    ndcg_at_k,
-    precision_at_k,
-    recall_at_k,
-    temporal_split,
-    verify_temporal_order,
+    load_clean_split_data,
+    ModelRegistry,
 )
 
 
 def main() -> None:
     
     set_reproducible_seed()
-    ratings, movies = load_movielens()
-    user_to_idx, _, movie_to_idx, _ = create_mappings(ratings, movies)
+    ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = load_clean_split_data()
     num_users = len(user_to_idx)
     catalog_size = len(movie_to_idx)
-
-    train_df, test_df = temporal_split(ratings, test_ratio=0.2)
-    verify_temporal_order(train_df, test_df, label="test")
 
     popularity_counts = train_df["movieId"].value_counts()
     popular_movies = [int(mid) for mid in popularity_counts.index.tolist()]
@@ -66,6 +56,17 @@ def main() -> None:
             f"{k:>2}     {metrics[f'precision@{k}']:.3f}      {metrics[f'recall@{k}']:.3f}      "
             f"{metrics[f'ndcg@{k}']:.3f}      {metrics['coverage']:.3f}"
         )
+
+    # Register the baseline model state and metrics
+    ModelRegistry.register(
+        "popularity",
+        {
+            "popular_movies": popular_movies,
+            "popularity_counts": popularity_counts.to_dict()
+        },
+        metrics_10,
+        {"k": TOP_K}
+    )
 
 
 if __name__ == "__main__":

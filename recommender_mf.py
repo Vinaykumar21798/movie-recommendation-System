@@ -16,12 +16,10 @@ from config import ARTIFACT_DIR, MF_FACTORS, OUTPUT_DIR, TOP_K, ensure_project_d
 from recommender_common import (
     build_user_movie_matrix,
     build_user_movie_sets,
-    create_mappings,
     evaluate_recommender,
     get_movie_title,
-    load_movielens,
-    temporal_train_validation_test_split,
-    verify_temporal_order,
+    load_clean_split_data,
+    ModelRegistry,
     write_csv,
     write_json,
 )
@@ -143,14 +141,10 @@ def main() -> None:
     print("TASK 5: MATRIX FACTORIZATION RECOMMENDATIONS")
     print("=" * 72)
 
-    ratings, movies = load_movielens()
-    user_to_idx, _, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
+    ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = load_clean_split_data()
     num_users = len(user_to_idx)
     num_movies = len(movie_to_idx)
 
-    train_df, val_df, test_df = temporal_train_validation_test_split(ratings)
-    verify_temporal_order(train_df, val_df, label="validation")
-    verify_temporal_order(pd.concat([train_df, val_df], ignore_index=True), test_df, label="test")
     print(f"Dataset split: {len(train_df)} train, {len(val_df)} validation, {len(test_df)} test ratings.")
     print(f"Catalog size: {num_users} users, {num_movies} movies.")
 
@@ -292,6 +286,17 @@ def main() -> None:
             },
             "plot_path": str(plot_path),
         },
+    )
+
+    # Register the model state and metrics
+    ModelRegistry.register(
+        "mf",
+        {
+            "pred_scores": pred_scores_best,
+            "best_factors": best_factors
+        },
+        test_metrics,
+        {"best_factors": best_factors, "k": TOP_K}
     )
     write_json(args.output_dir / "mf_nearest_neighbors.json", nearest)
     print(f"\nSaved plot: {plot_path}")

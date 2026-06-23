@@ -12,6 +12,7 @@ from config import OUTPUT_DIR, REPORT_DIR, ensure_project_dirs
 
 
 FULL_BENCHMARK_COMMANDS = [
+    ["recommender_baseline.py"],
     ["recommender_item_cf.py"],
     ["recommender_lsh.py", "--skip_brute_force"],
     ["recommender_mf.py"],

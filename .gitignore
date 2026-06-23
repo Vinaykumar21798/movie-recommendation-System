@@ -6,3 +6,4 @@ venv/
 outputs/server*.log
 artifacts/*.pkl
 data/ml-latest-small.zip
+data/*.csv

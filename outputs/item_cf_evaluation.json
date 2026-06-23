@@ -5,10 +5,10 @@
     "precision@10": 0.05770491803278688,
     "recall@10": 0.03406496070605184
   },
-  "neighbor_runtime_seconds": 14.711771011352539,
+  "neighbor_runtime_seconds": 19.013718366622925,
   "selected_threshold": 4.0,
   "similarity_memory_mb": 124.29804229736328,
-  "similarity_runtime_seconds": 0.3883335590362549,
+  "similarity_runtime_seconds": 0.5751264095306396,
   "test_metrics": {
     "coverage": 0.07678094847053993,
     "ndcg@10": 0.08115056910250426,

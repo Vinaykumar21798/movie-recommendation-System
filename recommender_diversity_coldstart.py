@@ -14,14 +14,11 @@ from config import MMR_LAMBDAS, OUTPUT_DIR, TOP_K, ensure_project_dirs, set_repr
 from recommender_common import (
     build_user_movie_matrix,
     build_user_movie_sets,
-    create_mappings,
     evaluate_recommender,
-    load_movielens,
+    load_clean_split_data,
     ndcg_at_k,
     precision_at_k,
     recall_at_k,
-    temporal_train_validation_test_split,
-    verify_temporal_order,
     write_csv,
     write_json,
 )
@@ -325,14 +322,9 @@ def main() -> None:
     print("TASK 7: DIVERSITY (MMR) AND COLD-START RECOMMENDATIONS")
     print("=" * 72)
 
-    ratings, movies = load_movielens()
-    user_to_idx, _, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
+    ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = load_clean_split_data()
     num_users = len(user_to_idx)
     num_movies = len(movie_to_idx)
-
-    train_df, val_df, test_df = temporal_train_validation_test_split(ratings)
-    verify_temporal_order(train_df, val_df, label="validation")
-    verify_temporal_order(pd.concat([train_df, val_df], ignore_index=True), test_df, label="test")
 
     train_matrix = build_user_movie_matrix(train_df, user_to_idx, movie_to_idx, shape=(num_users, num_movies))
     train_user_watched = build_user_movie_sets(train_df, user_to_idx, movie_to_idx)

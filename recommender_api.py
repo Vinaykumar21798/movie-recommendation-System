@@ -19,26 +19,18 @@ from sklearn.decomposition import TruncatedSVD
 
 import uvicorn
 
-from config import API_ARTIFACT_PATH, TOP_K, ensure_project_dirs, set_reproducible_seed
+from config import TOP_K, ensure_project_dirs, set_reproducible_seed
 from recommender_common import (
     build_user_movie_matrix,
     build_user_movie_sets,
-    create_mappings,
     evaluate_recommender,
     get_movie_title,
-    load_movielens,
-    temporal_split,
+    load_clean_split_data,
+    ModelRegistry,
     write_json,
 )
-from recommender_graph import bfs_recommend, build_bipartite_graph
-from recommender_item_cf import (
-    build_item_similarity,
-    build_movie_neighbors,
-    build_user_train_ratings,
-    liked_movies_by_user,
-    popularity_recommender_metrics,
-    recommend_for_user,
-)
+from recommender_graph import bfs_recommend
+from recommender_item_cf import recommend_for_user
 
 
 ARTIFACT_VERSION = 3
@@ -121,66 +113,9 @@ class ModelState:
         self.graph = None
         self.comparison: dict[str, dict[str, float]] | None = None
 
-    def to_artifact(self) -> dict[str, Any]:
-        
-        return {
-            "artifact_version": ARTIFACT_VERSION,
-            "ratings": self.ratings,
-            "movies": self.movies,
-            "train_df": self.train_df,
-            "test_df": self.test_df,
-            "user_to_idx": self.user_to_idx,
-            "idx_to_user": self.idx_to_user,
-            "movie_to_idx": self.movie_to_idx,
-            "idx_to_movie": self.idx_to_movie,
-            "num_users": self.num_users,
-            "num_movies": self.num_movies,
-            "train_matrix": self.train_matrix,
-            "train_user_watched": self.train_user_watched,
-            "full_user_watched": self.full_user_watched,
-            "test_user_movies": self.test_user_movies,
-            "popular_movies": self.popular_movies,
-            "popularity_counts": self.popularity_counts,
-            "movie_neighbors": self.movie_neighbors,
-            "train_user_liked": dict(self.train_user_liked),
-            "pred_scores": self.pred_scores,
-            "graph": self.graph,
-            "comparison": self.comparison,
-        }
-
-    def load_artifact(self, payload: dict[str, Any]) -> None:
-        
-        for key, value in payload.items():
-            if key != "artifact_version":
-                setattr(self, key, value)
-        self.loaded = True
-
+    # Removed state persistence methods in favor of ModelRegistry
 
 state = ModelState()
-
-
-def _persist_state() -> None:
-    
-    ensure_project_dirs()
-    with API_ARTIFACT_PATH.open("wb") as f:
-        pickle.dump(state.to_artifact(), f, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def _load_persisted_state() -> bool:
-    
-    if not API_ARTIFACT_PATH.exists():
-        return False
-    try:
-        with API_ARTIFACT_PATH.open("rb") as f:
-            payload = pickle.load(f)
-        if payload.get("artifact_version") != ARTIFACT_VERSION:
-            return False
-        state.load_artifact(payload)
-        print(f"Loaded API model artifact from {API_ARTIFACT_PATH}")
-        return True
-    except Exception as exc:
-        print(f"Could not load API artifact; rebuilding. Reason: {exc}")
-        return False
 
 
 def load_all_models(force_rebuild: bool = False) -> None:
@@ -188,25 +123,29 @@ def load_all_models(force_rebuild: bool = False) -> None:
     if state.loaded and not force_rebuild:
         return
 
-    ensure_project_dirs()
-    set_reproducible_seed()
-
-    if not force_rebuild and _load_persisted_state():
-        return
+    if force_rebuild:
+        raise RuntimeError("Retraining inside the API is disabled for safety. Please run the training scripts (recommender_baseline.py, recommender_item_cf.py, recommender_mf.py, recommender_graph.py) to rebuild and register the models.")
 
     print("=" * 72)
-    print("TASK 8: RECOMMENDATION API MODEL BUILD")
+    print("TASK 8: RECOMMENDATION API MODEL LOADING FROM REGISTRY")
     print("=" * 72)
     t_start = time.perf_counter()
 
-    state.ratings, state.movies = load_movielens()
-    state.user_to_idx, state.idx_to_user, state.movie_to_idx, state.idx_to_movie = create_mappings(
+    # Load unified splits
+    (
         state.ratings,
         state.movies,
-    )
+        state.train_df,
+        state.val_df,
+        state.test_df,
+        state.user_to_idx,
+        state.idx_to_user,
+        state.movie_to_idx,
+        state.idx_to_movie,
+    ) = load_clean_split_data()
+
     state.num_users = len(state.user_to_idx)
     state.num_movies = len(state.movie_to_idx)
-    state.train_df, state.test_df = temporal_split(state.ratings, test_ratio=0.2)
 
     state.train_matrix = build_user_movie_matrix(
         state.train_df,
@@ -230,29 +169,38 @@ def load_all_models(force_rebuild: bool = False) -> None:
         state.movie_to_idx,
     )
 
-    pop_series = state.train_df["movieId"].value_counts()
-    state.popular_movies = [int(mid) for mid in pop_series.index.tolist()]
-    state.popularity_counts = {int(mid): int(count) for mid, count in pop_series.to_dict().items()}
-    print("  [1/4] Popularity model ready")
+    try:
+        # Load popularity
+        pop_payload = ModelRegistry.load_payload("popularity")
+        state.popular_movies = pop_payload["popular_movies"]
+        state.popularity_counts = pop_payload["popularity_counts"]
+        print("  [1/4] Popularity model loaded from Registry")
 
-    similarity = build_item_similarity(state.train_matrix)
-    state.movie_neighbors = build_movie_neighbors(similarity, k=20)
-    user_train_ratings = build_user_train_ratings(state.train_df, state.user_to_idx, state.movie_to_idx)
-    state.train_user_liked = liked_movies_by_user(user_train_ratings, threshold=3.5)
-    print("  [2/4] Item-CF model ready")
+        # Load Item-CF
+        item_cf_payload = ModelRegistry.load_payload("item_cf")
+        state.movie_neighbors = item_cf_payload["movie_neighbors"]
+        state.train_user_liked = item_cf_payload["train_user_liked"]
+        print("  [2/4] Item-CF model loaded from Registry")
 
-    svd = TruncatedSVD(n_components=50, random_state=42)
-    user_factors = svd.fit_transform(state.train_matrix)
-    movie_factors = svd.components_.T
-    state.pred_scores = user_factors.dot(movie_factors.T)
-    print(f"  [3/4] MF model ready (user factors {user_factors.shape})")
+        # Load SVD MF
+        mf_payload = ModelRegistry.load_payload("mf")
+        state.pred_scores = mf_payload["pred_scores"]
+        print("  [3/4] MF model loaded from Registry")
 
-    state.graph = build_bipartite_graph(state.train_df)
-    print(f"  [4/4] Graph model ready ({state.graph.number_of_nodes()} nodes, {state.graph.number_of_edges()} edges)")
+        # Load Graph
+        graph_payload = ModelRegistry.load_payload("graph")
+        state.graph = graph_payload["graph"]
+        print("  [4/4] Graph model loaded from Registry")
+
+    except ValueError as e:
+        raise RuntimeError(
+            f"Failed to load required model from registry: {e}. "
+            "Please ensure you run all model training scripts "
+            "(recommender_baseline.py, recommender_item_cf.py, recommender_mf.py, recommender_graph.py) first to populate the Model Registry."
+        ) from e
 
     state.loaded = True
-    _persist_state()
-    print(f"All models built and persisted in {time.perf_counter() - t_start:.2f}s")
+    print(f"All models successfully loaded from registry in {time.perf_counter() - t_start:.2f}s")
 
 
 def _recommend_popularity(
@@ -433,7 +381,6 @@ def compare_methods() -> CompareResponse:
         raise HTTPException(503, "Models are still loading")
     if state.comparison is None:
         state.comparison = _build_comparison_results()
-        _persist_state()
     winner = _pick_winner(state.comparison)
     return CompareResponse(comparison=_schema_comparison(state.comparison), winner=winner)
 
@@ -513,7 +460,7 @@ def run_validation_report() -> dict[str, Any]:
         "cache_benchmark": cache,
         "comparison": comparison,
         "winner": winner,
-        "artifact_path": str(API_ARTIFACT_PATH),
+        "artifact_path": str(ModelRegistry.REGISTRY_FILE),
     }
     write_json("outputs/api_validation_report.json", report)
     return report

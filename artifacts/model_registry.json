@@ -1,0 +1,56 @@
+{
+  "graph": {
+    "metrics": {
+      "coverage": 0.007595976185588175,
+      "ndcg@10": 0.06936602098878053,
+      "precision@10": 0.05852459016393443,
+      "recall@10": 0.03355307152361788
+    },
+    "params": {
+      "k": 10
+    },
+    "pkl_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\graph_model.pkl",
+    "registered_at": "2026-06-23T17:12:05.998657"
+  },
+  "item_cf": {
+    "metrics": {
+      "coverage": 0.07678094847053993,
+      "ndcg@10": 0.08115056910250426,
+      "precision@10": 0.07360655737704917,
+      "recall@10": 0.04143383245057894
+    },
+    "params": {
+      "best_threshold": 4.0,
+      "k": 10
+    },
+    "pkl_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\item_cf_model.pkl",
+    "registered_at": "2026-06-23T17:06:54.295115"
+  },
+  "mf": {
+    "metrics": {
+      "coverage": 0.06333401765551222,
+      "ndcg@10": 0.08359115166076456,
+      "precision@10": 0.07540983606557378,
+      "recall@10": 0.04400613147285067
+    },
+    "params": {
+      "best_factors": 50,
+      "k": 10
+    },
+    "pkl_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\mf_model.pkl",
+    "registered_at": "2026-06-23T17:11:27.784067"
+  },
+  "popularity": {
+    "metrics": {
+      "coverage": 0.0074933278587559025,
+      "ndcg@10": 0.0705687216665185,
+      "precision@10": 0.05770491803278688,
+      "recall@10": 0.03406496070605184
+    },
+    "params": {
+      "k": 10
+    },
+    "pkl_path": "C:\\Users\\lenovo\\Desktop\\Data Factz Projects\\Movie Recommendation System\\artifacts\\popularity_model.pkl",
+    "registered_at": "2026-06-23T17:06:26.824338"
+  }
+}

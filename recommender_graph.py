@@ -14,11 +14,10 @@ from config import GRAPH_SIMILARITY_THRESHOLDS, OUTPUT_DIR, TOP_K, ensure_projec
 from recommender_common import (
     build_user_movie_matrix,
     build_user_movie_sets,
-    create_mappings,
     evaluate_recommender,
     get_movie_title,
-    load_movielens,
-    temporal_split,
+    load_clean_split_data,
+    ModelRegistry,
     write_csv,
     write_json,
 )
@@ -240,12 +239,10 @@ def main() -> None:
     print("TASK 6: RECOMMENDATION BY WALKING RATINGS GRAPH")
     print("=" * 72)
 
-    ratings, movies = load_movielens()
-    user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
+    ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = load_clean_split_data()
     num_users = len(user_to_idx)
     num_movies = len(movie_to_idx)
 
-    train_df, test_df = temporal_split(ratings, test_ratio=0.2)
     train_user_watched = build_user_movie_sets(train_df, user_to_idx, movie_to_idx)
     test_user_movies = build_user_movie_sets(test_df, user_to_idx, movie_to_idx)
 
@@ -381,6 +378,16 @@ def main() -> None:
         },
     )
     write_csv(OUTPUT_DIR / "graph_cluster_thresholds.csv", cluster_rows)
+
+    # Register the model state and metrics
+    ModelRegistry.register(
+        "graph",
+        {
+            "graph": graph
+        },
+        bfs_metrics,
+        {"k": TOP_K}
+    )
 
 
 if __name__ == "__main__":

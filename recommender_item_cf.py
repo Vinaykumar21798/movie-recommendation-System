@@ -15,17 +15,13 @@ from config import ITEM_CF_THRESHOLDS, OUTPUT_DIR, TOP_K, ensure_project_dirs, s
 from recommender_common import (
     build_user_movie_matrix,
     build_user_movie_sets,
-    create_mappings,
-    download_and_extract_dataset,
     evaluate_recommender,
     get_movie_title,
-    load_movielens,
+    load_clean_split_data,
+    ModelRegistry,
     ndcg_at_k,
     precision_at_k,
     recall_at_k,
-    temporal_split,
-    temporal_train_validation_test_split,
-    verify_temporal_order,
     write_json,
 )
 
@@ -172,14 +168,9 @@ def main() -> None:
     ensure_project_dirs()
     set_reproducible_seed()
 
-    ratings, movies = load_movielens()
-    user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = create_mappings(ratings, movies)
+    ratings, movies, train_df, val_df, test_df, user_to_idx, idx_to_user, movie_to_idx, idx_to_movie = load_clean_split_data()
     num_users = len(user_to_idx)
     num_movies = len(movie_to_idx)
-
-    train_df, val_df, test_df = temporal_train_validation_test_split(ratings)
-    verify_temporal_order(train_df, val_df, label="validation")
-    verify_temporal_order(pd.concat([train_df, val_df], ignore_index=True), test_df, label="test")
 
     popularity_counts = train_df["movieId"].value_counts()
     popular_movies = [int(mid) for mid in popularity_counts.index.tolist()]
@@ -316,6 +307,18 @@ def main() -> None:
             "neighbor_runtime_seconds": neighbor_runtime,
             "similarity_memory_mb": memory_mb,
         },
+    )
+
+    # Register the model state and metrics
+    ModelRegistry.register(
+        "item_cf",
+        {
+            "movie_neighbors": movie_neighbors,
+            "train_user_liked": train_user_liked_best,
+            "best_threshold": best_threshold
+        },
+        test_metrics,
+        {"best_threshold": best_threshold, "k": TOP_K}
     )
 
 
